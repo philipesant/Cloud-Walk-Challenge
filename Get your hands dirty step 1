@@ -1,33 +1,35 @@
-# Load the CSV files
-file_path_1 = '/mnt/data/checkout_1.csv'
-file_path_2 = '/mnt/data/checkout_2.csv'
+import pandas as pd
 
-data1 = pd.read_csv(file_path_1)
-data2 = pd.read_csv(file_path_2)
+# Load the CSV files
+path_to_file1 = '/mnt/data/checkout_1.csv'
+path_to_file2 = '/mnt/data/checkout_2.csv'
+
+# Read the data from the CSV files
+data1 = pd.read_csv(path_to_file1)
+data2 = pd.read_csv(path_to_file2)
 
 # Display the first few rows of each dataframe
-data1_head = data1.head()
-data2_head = data2.head()
+data1_preview = data1.head()
+data2_preview = data2.head()
 
-data1_head, data2_head
+data1_preview, data2_preview
 
+# Calculate descriptive statistics for the first dataset
+data1_summary = data1.describe()
 
-# Calculando estatísticas descritivas para a tabela 1
-data1_stats = data1.describe()
-
-# Calculando o desvio entre "today" e as colunas históricas
+# Compute deviations between "today" and historical columns
 data1['deviation_yesterday'] = data1['today'] - data1['yesterday']
 data1['deviation_same_day_last_week'] = data1['today'] - data1['same_day_last_week']
 data1['deviation_avg_last_week'] = data1['today'] - data1['avg_last_week']
 data1['deviation_avg_last_month'] = data1['today'] - data1['avg_last_month']
 
-# Calculando o desvio padrão
+# Calculate standard deviation of the deviations
 std_dev_yesterday = data1['deviation_yesterday'].std()
 std_dev_same_day_last_week = data1['deviation_same_day_last_week'].std()
 std_dev_avg_last_week = data1['deviation_avg_last_week'].std()
 std_dev_avg_last_month = data1['deviation_avg_last_month'].std()
 
-# Verificando anomalias
+# Identify anomalies
 data1['anomaly_yesterday'] = abs(data1['deviation_yesterday']) > 2 * std_dev_yesterday
 data1['anomaly_same_day_last_week'] = abs(data1['deviation_same_day_last_week']) > 2 * std_dev_same_day_last_week
 data1['anomaly_avg_last_week'] = abs(data1['deviation_avg_last_week']) > 2 * std_dev_avg_last_week
@@ -35,25 +37,24 @@ data1['anomaly_avg_last_month'] = abs(data1['deviation_avg_last_month']) > 2 * s
 
 import ace_tools as tools; tools.display_dataframe_to_user(name="Checkout Data Analysis Table 1", dataframe=data1)
 
-data1_stats, data1[['time', 'today', 'anomaly_yesterday', 'anomaly_same_day_last_week', 'anomaly_avg_last_week', 'anomaly_avg_last_month']]
+data1_summary, data1[['time', 'today', 'anomaly_yesterday', 'anomaly_same_day_last_week', 'anomaly_avg_last_week', 'anomaly_avg_last_month']]
 
+# Calculate descriptive statistics for the second dataset
+data2_summary = data2.describe()
 
-# Calculando estatísticas descritivas para a tabela 2
-data2_stats = data2.describe()
-
-# Calculando o desvio entre "today" e as colunas históricas
+# Compute deviations between "today" and historical columns
 data2['deviation_yesterday'] = data2['today'] - data2['yesterday']
 data2['deviation_same_day_last_week'] = data2['today'] - data2['same_day_last_week']
 data2['deviation_avg_last_week'] = data2['today'] - data2['avg_last_week']
 data2['deviation_avg_last_month'] = data2['today'] - data2['avg_last_month']
 
-# Calculando o desvio padrão
+# Calculate standard deviation of the deviations
 std_dev_yesterday = data2['deviation_yesterday'].std()
 std_dev_same_day_last_week = data2['deviation_same_day_last_week'].std()
 std_dev_avg_last_week = data2['deviation_avg_last_week'].std()
 std_dev_avg_last_month = data2['deviation_avg_last_month'].std()
 
-# Verificando anomalias
+# Identify anomalies
 data2['anomaly_yesterday'] = abs(data2['deviation_yesterday']) > 2 * std_dev_yesterday
 data2['anomaly_same_day_last_week'] = abs(data2['deviation_same_day_last_week']) > 2 * std_dev_same_day_last_week
 data2['anomaly_avg_last_week'] = abs(data2['deviation_avg_last_week']) > 2 * std_dev_avg_last_week
@@ -61,5 +62,4 @@ data2['anomaly_avg_last_month'] = abs(data2['deviation_avg_last_month']) > 2 * s
 
 tools.display_dataframe_to_user(name="Checkout Data Analysis Table 2", dataframe=data2)
 
-data2_stats, data2[['time', 'today', 'anomaly_yesterday', 'anomaly_same_day_last_week', 'anomaly_avg_last_week', 'anomaly_avg_last_month']]
-
+data2_summary, data2[['time', 'today', 'anomaly_yesterday', 'anomaly_same_day_last_week', 'anomaly_avg_last_week', 'anomaly_avg_last_month']]
