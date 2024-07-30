@@ -1,0 +1,207 @@
+PASSO 1: CARREGAR OS DADOS
+
+# Carregar os dados das transações
+data1 = pd.read_csv('/mnt/data/transactions_1.csv')
+data2 = pd.read_csv('/mnt/data/transactions_2.csv')
+
+# Exibir as primeiras linhas de cada conjunto de dados
+data1.head(), data2.head()
+
+PASSO 2: CONFIGURAR BANCO DE DADOS SQL
+
+# Conectar ao banco de dados
+conn = sqlite3.connect('transactions.db')
+cursor = conn.cursor()
+
+# Criar tabelas
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT,
+    status TEXT,
+    amount REAL
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    alert_time TEXT,
+    alert_message TEXT
+)
+''')
+
+conn.commit()
+
+PASSO 3: ENDPOINT
+
+from flask import Flask, request, jsonify
+from datetime import datetime, timedelta
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+app = Flask(__name__)
+
+def identify_status(row):
+    if row['status'] in ['failed', 'reversed']:
+        return 'problem'
+    elif row['status'] == 'denied':
+        return 'risk_denied'
+    else:
+        return 'approved'
+
+def send_email_alert(subject, body):
+    smtp_server = "smtp.gmail.com"
+    port = 587
+    sender_email = "youremail@gmail.com"
+    password = "yourpassword"
+    receiver_email = "teamemail@example.com"
+
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    server = smtplib.SMTP(smtp_server, port)
+    server.starttls()
+    server.login(sender_email, password)
+    text = msg.as_string()
+    server.sendmail(sender_email, receiver_email, text)
+    server.quit()
+
+def check_for_alerts():
+    cursor.execute("SELECT timestamp, status FROM transactions WHERE timestamp > datetime('now', '-1 minute')")
+    transactions = cursor.fetchall()
+    problem_count = sum(1 for t in transactions if t[1] == 'problem')
+    risk_denied_count = sum(1 for t in transactions if t[1] == 'risk_denied')
+    
+    threshold = 5  # Define seu limite apropriado aqui
+    if problem_count > threshold:
+        alert_message = f"High number of problem transactions detected in the last minute: {problem_count}"
+        send_email_alert("Problem Transactions Alert", alert_message)
+        cursor.execute("INSERT INTO alerts (alert_time, alert_message) VALUES (?, ?)", (datetime.now(), alert_message))
+        conn.commit()
+    
+    if risk_denied_count > threshold:
+        alert_message = f"High number of risk denied transactions detected in the last minute: {risk_denied_count}"
+        send_email_alert("Risk Denied Transactions Alert", alert_message)
+        cursor.execute("INSERT INTO alerts (alert_time, alert_message) VALUES (?, ?)", (datetime.now(), alert_message))
+        conn.commit()
+
+@app.route('/transaction', methods=['POST'])
+def transaction():
+    data = request.json
+    timestamp = datetime.strptime(data['timestamp'], '%Y-%m-%d %H:%M:%S')
+    status = identify_status(data)
+    amount = data['amount']
+    
+    cursor.execute("INSERT INTO transactions (timestamp, status, amount) VALUES (?, ?, ?)", (timestamp, status, amount))
+    conn.commit()
+    
+    check_for_alerts()
+    
+    return jsonify({'message': 'Transaction processed'}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+PASSO 4: SISTEMA DE ALERTA 
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+import sqlite3
+
+# Conectar ao banco de dados
+conn = sqlite3.connect('transactions.db')
+cursor = conn.cursor()
+
+# Configuração do servidor de e-mail
+smtp_server = "smtp.gmail.com"
+port = 587
+sender_email = "youremail@gmail.com"
+password = "yourpassword"
+receiver_email = "teamemail@example.com"
+
+def send_email_alert(subject, body):
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP(smtp_server, port)
+        server.starttls()
+        server.login(sender_email, password)
+        text = msg.as_string()
+        server.sendmail(sender_email, receiver_email, text)
+        server.quit()
+    except Exception as e:
+        print(f"Error: {e}")
+
+def check_for_alerts():
+    # Verifica transações nos últimos minutos
+    cursor.execute("SELECT timestamp, status FROM transactions WHERE timestamp > datetime('now', '-1 minute')")
+    transactions = cursor.fetchall()
+
+    # Contagem de transações problemáticas e negadas por risco
+    problem_count = sum(1 for t in transactions if t[1] == 'problem')
+    risk_denied_count = sum(1 for t in transactions if t[1] == 'risk_denied')
+
+    # Definir limites para alertas
+    problem_threshold = 5
+    risk_denied_threshold = 5
+
+    # Verificar e enviar alertas para transações problemáticas
+    if problem_count > problem_threshold:
+        alert_message = f"High number of problem transactions detected in the last minute: {problem_count}"
+        send_email_alert("Problem Transactions Alert", alert_message)
+        cursor.execute("INSERT INTO alerts (alert_time, alert_message) VALUES (?, ?)", (datetime.now(), alert_message))
+        conn.commit()
+
+    # Verificar e enviar alertas para transações negadas por risco
+    if risk_denied_count > risk_denied_threshold:
+        alert_message = f"High number of risk denied transactions detected in the last minute: {risk_denied_count}"
+        send_email_alert("Risk Denied Transactions Alert", alert_message)
+        cursor.execute("INSERT INTO alerts (alert_time, alert_message) VALUES (?, ?)", (datetime.now(), alert_message))
+        conn.commit()
+
+# Função para monitorar transações continuamente
+def monitor_transactions():
+    while True:
+        check_for_alerts()
+        time.sleep(60)  # Verificar a cada minuto
+
+if __name__ == "__main__":
+    monitor_transactions()
+
+
+PASSO 5: VISUALIZAÇÃO DE DADOS 
+
+import matplotlib.pyplot as plt
+
+def plot_transactions():
+    cursor.execute("SELECT timestamp, status, COUNT(*) FROM transactions GROUP BY timestamp, status")
+    data = cursor.fetchall()
+    
+    timestamps = [row[0] for row in data]
+    counts = [row[2] for row in data]
+    
+    plt.figure(figsize=(14, 7))
+    plt.plot(timestamps, counts, marker='o', linestyle='-')
+    plt.xlabel('Timestamp')
+    plt.ylabel('Number of Transactions')
+    plt.title('Real-time Transactions Monitoring')
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.show()
+
+# Chame esta função periodicamente para atualizar o gráfico
+plot_transactions()
