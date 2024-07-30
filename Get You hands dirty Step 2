@@ -1,5 +1,4 @@
-QUERY
-
+-- Adjusted SQL Query for calculating deviations
 SELECT 
     time,
     today,
@@ -7,43 +6,41 @@ SELECT
     same_day_last_week,
     avg_last_week,
     avg_last_month,
-    (today - avg_last_week) AS deviation_avg_last_week,
-    (today - avg_last_month) AS deviation_avg_last_month
+    (today - avg_last_week) AS deviation_from_avg_last_week,
+    (today - avg_last_month) AS deviation_from_avg_last_month
 FROM 
     checkout_data
 ORDER BY 
     time;
-
-
-GRÁFICO 1 (em python)
-
 import matplotlib.pyplot as plt
 
-# Preparando os dados para o gráfico
+# Preparing data for the plot
 time = data1['time']
 today = data1['today']
 avg_last_week = data1['avg_last_week']
 avg_last_month = data1['avg_last_month']
-deviation_avg_last_week = data1['deviation_avg_last_week']
-deviation_avg_last_month = data1['deviation_avg_last_month']
+deviation_from_avg_last_week = data1['deviation_from_avg_last_week']
+deviation_from_avg_last_month = data1['deviation_from_avg_last_month']
 
-# Criando o gráfico
+# Creating the plot
 plt.figure(figsize=(14, 7))
 
-# Plotando os valores de hoje
+# Plotting today's values
 plt.plot(time, today, label='Today', marker='o')
 
-# Plotando a média da última semana e a média do último mês
+# Plotting the average of last week and last month
 plt.plot(time, avg_last_week, label='Avg Last Week', linestyle='--')
 plt.plot(time, avg_last_month, label='Avg Last Month', linestyle='--')
 
-# Plotando as anomalias
-plt.fill_between(time, today, avg_last_week, where=abs(deviation_avg_last_week) > 2 * deviation_avg_last_week.std(), 
+# Highlighting anomalies
+plt.fill_between(time, today, avg_last_week, 
+                 where=abs(deviation_from_avg_last_week) > 2 * deviation_from_avg_last_week.std(), 
                  color='red', alpha=0.3, label='Anomalies Last Week')
-plt.fill_between(time, today, avg_last_month, where=abs(deviation_avg_last_month) > 2 * deviation_avg_last_month.std(), 
+plt.fill_between(time, today, avg_last_month, 
+                 where=abs(deviation_from_avg_last_month) > 2 * deviation_from_avg_last_month.std(), 
                  color='orange', alpha=0.3, label='Anomalies Last Month')
 
-# Configurações do gráfico
+# Plot settings
 plt.xlabel('Time')
 plt.ylabel('Values')
 plt.title('Checkout Data Analysis with Anomalies')
@@ -51,30 +48,28 @@ plt.legend()
 plt.grid(True)
 plt.xticks(rotation=45)
 
-# Exibindo o gráfico
+# Displaying the plot
 plt.show()
+import matplotlib.pyplot as plt
 
-
-GRÁFICO 2 (em python)
-
-# Criando o gráfico novamente sem fill_between
+# Creating the plot again without fill_between
 plt.figure(figsize=(14, 7))
 
-# Plotando os valores de hoje
+# Plotting today's values
 plt.plot(time, today, label='Today', marker='o')
 
-# Plotando a média da última semana e a média do último mês
+# Plotting the average of last week and last month
 plt.plot(time, avg_last_week, label='Avg Last Week', linestyle='--')
 plt.plot(time, avg_last_month, label='Avg Last Month', linestyle='--')
 
-# Destacando anomalias com pontos vermelhos
-anomalies_last_week = data1[abs(data1['deviation_avg_last_week']) > 2 * deviation_avg_last_week.std()]
-anomalies_last_month = data1[abs(data1['deviation_avg_last_month']) > 2 * deviation_avg_last_month.std()]
+# Highlighting anomalies with red and orange points
+anomalies_last_week = data1[abs(data1['deviation_from_avg_last_week']) > 2 * deviation_from_avg_last_week.std()]
+anomalies_last_month = data1[abs(data1['deviation_from_avg_last_month']) > 2 * deviation_from_avg_last_month.std()]
 
 plt.scatter(anomalies_last_week['time'], anomalies_last_week['today'], color='red', label='Anomalies Last Week')
 plt.scatter(anomalies_last_month['time'], anomalies_last_month['today'], color='orange', label='Anomalies Last Month')
 
-# Configurações do gráfico
+# Plot settings
 plt.xlabel('Time')
 plt.ylabel('Values')
 plt.title('Checkout Data Analysis with Anomalies')
@@ -82,5 +77,5 @@ plt.legend()
 plt.grid(True)
 plt.xticks(rotation=45)
 
-# Exibindo o gráfico
+# Displaying the plot
 plt.show()
