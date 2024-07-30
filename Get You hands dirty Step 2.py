@@ -1,4 +1,54 @@
--- Adjusted SQL Query for calculating deviations
+-- Create tables for checkout data
+CREATE TABLE checkout_data_1 (
+    time VARCHAR(3),
+    today INT,
+    yesterday INT,
+    same_day_last_week INT,
+    avg_last_week FLOAT,
+    avg_last_month FLOAT
+);
+
+CREATE TABLE checkout_data_2 (
+    time VARCHAR(3),
+    today INT,
+    yesterday INT,
+    same_day_last_week INT,
+    avg_last_week FLOAT,
+    avg_last_month FLOAT
+);
+
+-- Create tables for transaction data
+CREATE TABLE transactions_1 (
+    timestamp TEXT,
+    status TEXT,
+    amount REAL
+);
+
+CREATE TABLE transactions_2 (
+    timestamp TEXT,
+    status TEXT,
+    amount REAL
+);
+-- Insert data into checkout_data_1 (example)
+INSERT INTO checkout_data_1 VALUES ('00h', 9, 12, 11, 6.42, 4.85);
+INSERT INTO checkout_data_1 VALUES ('01h', 3, 5, 1, 1.85, 1.92);
+-- Continue inserting the rest of the data...
+
+-- Insert data into checkout_data_2 (example)
+INSERT INTO checkout_data_2 VALUES ('00h', 6, 9, 5, 5.00, 4.92);
+INSERT INTO checkout_data_2 VALUES ('01h', 3, 3, 2, 2.00, 1.92);
+-- Continue inserting the rest of the data...
+
+-- Insert data into transactions_1 (example)
+INSERT INTO transactions_1 VALUES ('2024-07-30 10:00:00', 'approved', 100.0);
+INSERT INTO transactions_1 VALUES ('2024-07-30 10:01:00', 'failed', 50.0);
+-- Continue inserting the rest of the data...
+
+-- Insert data into transactions_2 (example)
+INSERT INTO transactions_2 VALUES ('2024-07-30 10:03:00', 'approved', 200.0);
+INSERT INTO transactions_2 VALUES ('2024-07-30 10:04:00', 'reversed', 100.0);
+-- Continue inserting the rest of the data...
+-- Calculate deviations from average last week and average last month
 SELECT 
     time,
     today,
@@ -9,12 +59,27 @@ SELECT
     (today - avg_last_week) AS deviation_from_avg_last_week,
     (today - avg_last_month) AS deviation_from_avg_last_month
 FROM 
-    checkout_data
+    checkout_data_1
+ORDER BY 
+    time;
+
+-- Repeat for checkout_data_2
+SELECT 
+    time,
+    today,
+    yesterday,
+    same_day_last_week,
+    avg_last_week,
+    avg_last_month,
+    (today - avg_last_week) AS deviation_from_avg_last_week,
+    (today - avg_last_month) AS deviation_from_avg_last_month
+FROM 
+    checkout_data_2
 ORDER BY 
     time;
 import matplotlib.pyplot as plt
 
-# Preparing data for the plot
+# Prepare data for the plot
 time = data1['time']
 today = data1['today']
 avg_last_week = data1['avg_last_week']
@@ -22,17 +87,17 @@ avg_last_month = data1['avg_last_month']
 deviation_from_avg_last_week = data1['deviation_from_avg_last_week']
 deviation_from_avg_last_month = data1['deviation_from_avg_last_month']
 
-# Creating the plot
+# Create the plot
 plt.figure(figsize=(14, 7))
 
-# Plotting today's values
+# Plot today's values
 plt.plot(time, today, label='Today', marker='o')
 
-# Plotting the average of last week and last month
+# Plot the average of last week and last month
 plt.plot(time, avg_last_week, label='Avg Last Week', linestyle='--')
 plt.plot(time, avg_last_month, label='Avg Last Month', linestyle='--')
 
-# Highlighting anomalies
+# Highlight anomalies
 plt.fill_between(time, today, avg_last_week, 
                  where=abs(deviation_from_avg_last_week) > 2 * deviation_from_avg_last_week.std(), 
                  color='red', alpha=0.3, label='Anomalies Last Week')
@@ -48,21 +113,21 @@ plt.legend()
 plt.grid(True)
 plt.xticks(rotation=45)
 
-# Displaying the plot
+# Display the plot
 plt.show()
 import matplotlib.pyplot as plt
 
-# Creating the plot again without fill_between
+# Create the plot again without fill_between
 plt.figure(figsize=(14, 7))
 
-# Plotting today's values
+# Plot today's values
 plt.plot(time, today, label='Today', marker='o')
 
-# Plotting the average of last week and last month
+# Plot the average of last week and last month
 plt.plot(time, avg_last_week, label='Avg Last Week', linestyle='--')
 plt.plot(time, avg_last_month, label='Avg Last Month', linestyle='--')
 
-# Highlighting anomalies with red and orange points
+# Highlight anomalies with red and orange points
 anomalies_last_week = data1[abs(data1['deviation_from_avg_last_week']) > 2 * deviation_from_avg_last_week.std()]
 anomalies_last_month = data1[abs(data1['deviation_from_avg_last_month']) > 2 * deviation_from_avg_last_month.std()]
 
@@ -77,5 +142,5 @@ plt.legend()
 plt.grid(True)
 plt.xticks(rotation=45)
 
-# Displaying the plot
+# Display the plot
 plt.show()
