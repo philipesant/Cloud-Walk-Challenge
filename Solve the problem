@@ -1,8 +1,8 @@
 import pandas as pd
 
 # Load the transaction data from CSV files
-transactions_1 = pd.read_csv('/mnt/data/transactions_1.csv')
-transactions_2 = pd.read_csv('/mnt/data/transactions_2.csv')
+transactions_1 = pd.read_csv('transactions_1.csv')
+transactions_2 = pd.read_csv('transactions_1.csv')
 
 # Display the first few rows of each dataset
 transactions_1.head(), transactions_2.head()
