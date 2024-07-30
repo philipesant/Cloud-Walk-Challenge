@@ -29,12 +29,31 @@ import pandas as pd
 import sqlite3
 
 # Load the transaction data from CSV files
-transactions_1 = pd.read_csv('/mnt/data/transactions_1.csv')
-transactions_2 = pd.read_csv('/mnt/data/transactions_2.csv')
+transactions_1 = pd.read_csv('transactions_1.csv')
+transactions_2 = pd.read_csv('transactions_2.csv')
 
 # Connect to the SQLite database
 connection = sqlite3.connect('transactions.db')
 cursor = connection.cursor()
+
+# Create tables if they don't exist
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS transactions_1 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT,
+    status TEXT,
+    amount REAL
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS transactions_2 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT,
+    status TEXT,
+    amount REAL
+)
+''')
 
 # Insert data into transactions_1 table
 for _, row in transactions_1.iterrows():
@@ -47,6 +66,7 @@ for _, row in transactions_2.iterrows():
                    (row['timestamp'], row['status'], row['amount']))
 
 connection.commit()
+
 from flask import Flask, request, jsonify
 from datetime import datetime
 import smtplib
@@ -56,6 +76,7 @@ import sqlite3
 
 app = Flask(__name__)
 
+# Define the function to determine transaction status
 def determine_status(row):
     if row['status'] in ['failed', 'reversed']:
         return 'problem'
@@ -64,6 +85,7 @@ def determine_status(row):
     else:
         return 'approved'
 
+# Function to send email alerts
 def send_alert_email(subject, body):
     smtp_server = "smtp.gmail.com"
     port = 587
@@ -83,6 +105,7 @@ def send_alert_email(subject, body):
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
 
+# Function to monitor and generate alerts
 def monitor_alerts(cursor):
     cursor.execute("SELECT timestamp, status FROM transactions_1 WHERE timestamp > datetime('now', '-1 minute')")
     transactions = cursor.fetchall()
@@ -120,8 +143,15 @@ if __name__ == '__main__':
     connection = sqlite3.connect('transactions.db', check_same_thread=False)
     cursor = connection.cursor()
     app.run(debug=True)
+
+import sqlite3
 import time
 
+# Connect to the database
+connection = sqlite3.connect('transactions.db')
+cursor = connection.cursor()
+
+# Function to continuously monitor transactions
 def continuous_monitoring():
     while True:
         monitor_alerts(cursor)
@@ -129,8 +159,16 @@ def continuous_monitoring():
 
 if __name__ == "__main__":
     continuous_monitoring()
+
+
+import sqlite3
 import matplotlib.pyplot as plt
 
+# Connect to the database
+connection = sqlite3.connect('transactions.db')
+cursor = connection.cursor()
+
+# Function to visualize transactions
 def visualize_transactions():
     cursor.execute("SELECT timestamp, status, COUNT(*) FROM transactions_1 GROUP BY timestamp, status")
     data = cursor.fetchall()
